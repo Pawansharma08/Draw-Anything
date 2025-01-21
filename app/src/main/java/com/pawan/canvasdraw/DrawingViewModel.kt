@@ -2,7 +2,6 @@ package com.pawan.canvasdraw
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,7 +10,10 @@ import kotlinx.coroutines.flow.update
 data class DrawingState(
     val selectedColor: Color = Color.Black,
     val currPath: PathData? = null,
-    val paths: List<PathData> = emptyList()
+    val paths: List<PathData> = emptyList(),
+    val canUndo: Boolean = false,
+    val canRedo: Boolean = false,
+    val redoPaths: List<PathData> = emptyList() // Tracks redo paths
 )
 
 val allColors = listOf(
@@ -36,12 +38,18 @@ sealed interface DrawingAction {
     data object onPathEnd : DrawingAction
     data class onSelectColor(val color: Color) : DrawingAction
     data object onClearCanvasClick : DrawingAction
+    data object onUndoClick : DrawingAction
+    data object onRedoClick : DrawingAction
 }
 
 class DrawingViewModel : ViewModel() {
 
     private val _state = MutableStateFlow(DrawingState())
     val state = _state.asStateFlow()
+
+    // Stacks for undo and redo actions
+    private val undoStack = mutableListOf<PathData>()
+    private val redoStack = mutableListOf<PathData>()
 
     fun onAction(action: DrawingAction) {
         when (action) {
@@ -50,6 +58,8 @@ class DrawingViewModel : ViewModel() {
             DrawingAction.onNewPathStart -> onNewPathStart()
             DrawingAction.onPathEnd -> onPathEnd()
             is DrawingAction.onSelectColor -> onSelectColor(action.color)
+            DrawingAction.onUndoClick -> onUndoClick()
+            DrawingAction.onRedoClick -> onRedoClick()
         }
     }
 
@@ -71,6 +81,11 @@ class DrawingViewModel : ViewModel() {
             )
         }
 
+        // Add to undo stack and clear redo stack
+        undoStack.add(currPathData)
+        redoStack.clear()
+
+        updateUndoRedoState()
     }
 
     private fun onNewPathStart() {
@@ -86,10 +101,15 @@ class DrawingViewModel : ViewModel() {
     }
 
     private fun onClearCanvasClick() {
+        undoStack.clear()
+        redoStack.clear()
+
         _state.update {
             it.copy(
                 currPath = null,
-                paths = emptyList()
+                paths = emptyList(),
+                canUndo = false,
+                canRedo = false
             )
         }
     }
@@ -106,5 +126,42 @@ class DrawingViewModel : ViewModel() {
         }
     }
 
+    private fun onUndoClick() {
+        if (undoStack.isNotEmpty()) {
+            val lastPath = undoStack.removeAt(undoStack.lastIndex)
+            redoStack.add(lastPath)
 
+            _state.update {
+                it.copy(
+                    paths = undoStack.toList()
+                )
+            }
+
+            updateUndoRedoState()
+        }
+    }
+
+    private fun onRedoClick() {
+        if (redoStack.isNotEmpty()) {
+            val lastPath = redoStack.removeLast()
+            undoStack.add(lastPath)
+
+            _state.update {
+                it.copy(
+                    paths = undoStack.toList()
+                )
+            }
+
+            updateUndoRedoState()
+        }
+    }
+
+    private fun updateUndoRedoState() {
+        _state.update {
+            it.copy(
+                canUndo = undoStack.isNotEmpty(),
+                canRedo = redoStack.isNotEmpty()
+            )
+        }
+    }
 }

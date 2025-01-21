@@ -24,23 +24,28 @@ import androidx.compose.ui.util.fastForEach
 
 @Composable
 fun ColumnScope.CanvasControls(
-    selectedColor:Color,
-    colors : List<Color>,
-    onColorSelected : (Color) -> Unit,
-    onClearCanvas : () -> Unit,
-    modifier: Modifier = Modifier) {
-    Row (
+    selectedColor: Color,
+    colors: List<Color>,
+    onColorSelected: (Color) -> Unit,
+    onClearCanvas: () -> Unit,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
+    canUndo: Boolean,
+    canRedo: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
-    ){
-        allColors.fastForEach { color ->
+    ) {
+        colors.fastForEach { color ->
             val isSelected = selectedColor == color
             Box(
                 modifier = Modifier
                     .graphicsLayer {
-                        val scale = if(isSelected) 1.2f else 1f
+                        val scale = if (isSelected) 1.2f else 1f
                         scaleX = scale
                         scaleY = scale
                     }
@@ -49,10 +54,9 @@ fun ColumnScope.CanvasControls(
                     .background(color)
                     .border(
                         width = 1.dp,
-                        color = if(isSelected){
+                        color = if (isSelected) {
                             Color.Black
-                        }
-                        else{
+                        } else {
                             Color.Transparent
                         },
                         shape = CircleShape
@@ -61,14 +65,16 @@ fun ColumnScope.CanvasControls(
                         onColorSelected(color)
                     }
             )
-
         }
     }
-    Button(
-        onClick = onClearCanvas,
-        modifier.align(alignment = Alignment.CenterHorizontally)
-            .padding(bottom = 8.dp,top = 8.dp)
-    ){
-        Text("Clear Screen")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+    ) {
+        Button(onClick = onUndo) { Text("Undo") }
+        Button(onClick = onRedo) { Text("Redo") }
+        Button(onClick = onClearCanvas) { Text("Clear Screen") }
     }
 }

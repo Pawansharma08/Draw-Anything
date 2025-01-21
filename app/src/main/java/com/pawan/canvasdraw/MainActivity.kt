@@ -66,7 +66,17 @@ class MainActivity : ComponentActivity() {
                             onClearCanvas = {
                                 ViewModel.onAction(DrawingAction.onClearCanvasClick)
                             },
+                            onUndo = {
+                                ViewModel.onAction(DrawingAction.onUndoClick)
+                            },
+                            onRedo = {
+                                ViewModel.onAction(DrawingAction.onRedoClick)
+                            },
+                            canUndo = state.paths.isNotEmpty(), // Enable Undo if there are paths
+                            canRedo = state.redoPaths.isNotEmpty(), // Enable Redo if there are redo paths
+                            modifier = Modifier
                         )
+
                     }
 
                 }
